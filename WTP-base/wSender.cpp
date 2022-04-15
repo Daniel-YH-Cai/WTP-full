@@ -162,7 +162,6 @@ int main(int argc, char *argv[])
     while (true)
     {
         udp.sendPacket(start);
-        sleep(1);
         if (udp.receivePacketTimeout(&response))
         {
             if (response.isValidACK() && response.get_seqNum() == initial_seq)
@@ -170,7 +169,6 @@ int main(int argc, char *argv[])
                 break;
             }
         }
-        sleep(1);
         response.reset();
     }
     cout<<"Start!\n";

@@ -24,7 +24,7 @@ public:
         window = (Packet **)malloc(ws * sizeof(Packet *));
         for (int i = 0; i < ws; i++)
         {
-            window[i] = NULL;
+            window[i] = nullptr;
         }
         logfile = ofstream(log);
         file = filename;
@@ -83,29 +83,27 @@ int main(int argc,char** argv)
         cout<<"This is new receiver\n";
         while (true)
         {
-            Packet pData;
-            receiver.s->receivePacket(&pData);
-            receiver.logfile << pData.get_type() << " " << pData.get_seqNum()
-                    << " " << pData.get_length() << " " << pData.get_checksum() <<"\n";
+            Packet* pData=new Packet(0);
+            receiver.s->receivePacket(pData);
+            receiver.logfile << pData->get_type() << " " << pData->get_seqNum()
+                    << " " << pData->get_length() << " " << pData->get_checksum() <<"\n";
             // For each packet received
-            if (pData.get_type() == "END" && pData.get_seqNum() == p.get_seqNum())
+            if (pData->get_type() == "END" && pData->get_seqNum() == p.get_seqNum())
             {
                 //ack for end
-                Packet endP (pData.get_seqNum());
+                Packet endP (pData->get_seqNum());
                 receiver.s->sendPacket(endP);
                 break;
             }
-            if (pData.checkSum())
+            if (pData->checkSum())
             {
-
-
-                if (pData.get_seqNum() == num)
+                if (pData->get_seqNum() == num)
                 {
                     // if (pData.get_seqNum() > max)
                     // {
                     //     max = pData.get_seqNum();
                     // }
-                    receiver.window[0] = &pData;
+                    receiver.window[0] = pData;
                     while (receiver.window[0] != nullptr)
                     {
                         receiver.writeFile(file);
@@ -120,9 +118,9 @@ int main(int argc,char** argv)
                 }
                 else
                 {
-                    if (pData.get_seqNum() > num && pData.get_seqNum() <= num + receiver.window_size)
+                    if (pData->get_seqNum() > num && pData->get_seqNum() <= num + receiver.window_size)
                     {
-                        receiver.window[pData.get_seqNum() - num] = &pData;
+                        receiver.window[pData->get_seqNum() - num] = pData;
                     }
                     Packet newP (num);
                     cout<<"I will send a ack packet with seq "<<newP.get_seqNum()<<"\n";

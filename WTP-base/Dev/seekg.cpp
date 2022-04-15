@@ -3,7 +3,7 @@
 int CHUNK_SIZE=1024;
 using namespace std;
 int main(){
-    ifstream file("./bin.txt",ios::binary);
+    ifstream file("./bin_huge.txt",ios::binary);
     file.seekg(0, ios::end);
     int length = file.tellg();
     file.seekg(0, ios::beg);

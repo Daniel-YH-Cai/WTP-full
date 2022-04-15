@@ -1,8 +1,15 @@
 s:
 	RUST_LOG=debug ./tests sanity
 l:
-	RUST_LOG=debug ./tests loss
+	 ./tests loss
 c:
-	RUST_LOG=debug ./tests corruption
+	 ./tests corruption
 d:
-	RUST_BACKTRACE=1 RUST_LOG=debug ./tests duplication
+	./tests duplication
+r:
+	./tests reorder
+dly:
+	./tests delay
+m:
+	./tests mix
+
