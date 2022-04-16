@@ -17,14 +17,16 @@ class BatchSender
     ifstream file;
     ofstream logfile;
     int window_size;
+    int start_seq;
 
 public:
     static const int chunk_size = DATA_SIZE;
-    BatchSender(const char *filename, const char *log, int ws)
+    BatchSender(const char *filename, const char *log, int ws,int first_seq)
     {
         window_size = ws;
         waiting_ack = 0;
         window_base = 0;
+        start_seq=first_seq;
         s = nullptr;
         logfile = ofstream(log);
         file = ifstream(filename, ios::binary);
@@ -120,11 +122,15 @@ public:
                 cout << "Now only " << waiting_ack << " packets "
                      << "wait for ack";
             }
-            else
-            {
-                cout << "Receive low ack: " << response.get_seqNum() << " while " << window_base
-                     << " is expected\n";
-                waiting_ack = 0;
+            else{
+                if(response.isValidACK()&&response.get_seqNum()==start_seq){
+                    cout<<"Duplicate start ACK\n";
+                }
+                else if(response.isValidACK()){
+                    cout << "Receive low ack: " << response.get_seqNum() << " while " << window_base
+                         << " is expected\n";
+                    waiting_ack = 0;
+                }
             }
         }
         else
@@ -172,7 +178,7 @@ int main(int argc, char *argv[])
         response.reset();
     }
     cout<<"Start!\n";
-    BatchSender bsender(argv[4], argv[5], window_size);
+    BatchSender bsender(argv[4], argv[5], window_size,initial_seq);
     bsender.set_UDPSocket(&udp);
     while (!bsender.finished())
     {
