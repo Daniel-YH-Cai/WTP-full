@@ -137,6 +137,9 @@ public:
         }
         return ans;
     }
+//    int get_type(){
+//        return header.type;
+//    }
     unsigned int get_seqNum()
     {
         return header.seqNum;
