@@ -128,8 +128,9 @@ int main(int argc, char **argv)
                     {
                         receiver.window[pData->get_seqNum() - num] = pData;
                     }
-                    Packet newP(num);
-                    cout << "I will send a ack packet with seq " << newP.get_seqNum() << "\n";
+                    Packet newP (pData->get_seqNum());
+                    cout<<"I will send a ack packet with seq "<<newP.get_seqNum()<<"\n";
+
                     receiver.s->sendPacket(newP);
                     receiver.logfile << "ACK Send\n";
                     receiver.logfile << newP.get_type() << " " << newP.get_seqNum()
