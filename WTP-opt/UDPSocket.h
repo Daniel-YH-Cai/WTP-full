@@ -153,7 +153,7 @@ public:
     bool nonBlockReceive(Packet *p){
         char message[1024+16]={0};
         int bytes_received=recvfrom(fd, message ,1024+16  , MSG_DONTWAIT, (struct sockaddr *)&si_other, &len_other);
-        Packet::deserialize(&p,message);
+        Packet::deserialize(p,message);
         if(bytes_received==-1){
             return false;
         }
