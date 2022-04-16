@@ -47,10 +47,9 @@ public:
         }
         window[window_size - 1] = nullptr;
     }
-
 };
 
-int main(int argc,char** argv)
+int main(int argc, char **argv)
 {
     if (argc != 5)
     {
@@ -60,7 +59,8 @@ int main(int argc,char** argv)
     int port = atoi(argv[1]);
     int window_size = atoi(argv[2]);
     UDPSocket udp;
-    if(!udp.bind_me(port)){
+    if (!udp.bind_me(port))
+    {
         return 0;
     }
     // receiver.bind_me(8888);
@@ -71,27 +71,33 @@ int main(int argc,char** argv)
     Packet p;
     receiver.s->receivePacket(&p);
     receiver.logfile << p.get_type() << " " << p.get_seqNum()
-            << " " << p.get_length() << " " << p.get_checksum() << "\n";
+                     << " " << p.get_length() << " " << p.get_checksum() << "\n";
     if (p.get_type() == "START")
     {
-        //ack for start
+        // ack for start
         Packet startP(p.get_seqNum());
         receiver.s->sendPacket(startP);
         ofstream file = ofstream(receiver.file + "/FILE-" + to_string(receiver.fileCount++) + ".out");
         int num = 0;
         int max = 0;
-        cout<<"This is new receiver\n";
+        cout << "This is new receiver\n";
         while (true)
         {
-            Packet* pData=new Packet(0);
+            Packet *pData = new Packet(0);
             receiver.s->receivePacket(pData);
             receiver.logfile << pData->get_type() << " " << pData->get_seqNum()
-                    << " " << pData->get_length() << " " << pData->get_checksum() <<"\n";
+                             << " " << pData->get_length() << " " << pData->get_checksum() << "\n";
+            if (pData->get_type() == "START")
+            {
+                receiver.s->sendPacket(startP);
+                continue;
+            }
+
             // For each packet received
             if (pData->get_type() == "END" && pData->get_seqNum() == p.get_seqNum())
             {
-                //ack for end
-                Packet endP (pData->get_seqNum());
+                // ack for end
+                Packet endP(pData->get_seqNum());
                 receiver.s->sendPacket(endP);
                 break;
             }
@@ -109,10 +115,10 @@ int main(int argc,char** argv)
                         receiver.writeFile(file);
                         num += 1;
                     }
-                    Packet newP (num);
-                    cout<<"I will send a ack packet with seq "<<newP.get_seqNum()<<"\n";
+                    Packet newP(num);
+                    cout << "I will send a ack packet with seq " << newP.get_seqNum() << "\n";
                     receiver.s->sendPacket(newP);
-                    receiver.logfile<<"ACK Sent\n";
+                    receiver.logfile << "ACK Sent\n";
                     receiver.logfile << newP.get_type() << " " << newP.get_seqNum()
                                      << " " << newP.get_length() << " " << newP.get_checksum() << "\n";
                 }
@@ -124,8 +130,9 @@ int main(int argc,char** argv)
                     }
                     Packet newP (pData->get_seqNum());
                     cout<<"I will send a ack packet with seq "<<newP.get_seqNum()<<"\n";
+
                     receiver.s->sendPacket(newP);
-                    receiver.logfile<<"ACK Send\n";
+                    receiver.logfile << "ACK Send\n";
                     receiver.logfile << newP.get_type() << " " << newP.get_seqNum()
                                      << " " << newP.get_length() << " " << newP.get_checksum() << "\n";
                 }

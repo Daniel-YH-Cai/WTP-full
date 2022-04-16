@@ -150,7 +150,15 @@ public:
         // Packet::deserializeBody(p, buffer);
         return true;
     }
-
+    bool nonBlockReceive(Packet *p){
+        char message[1024+16]={0};
+        int bytes_received=recvfrom(fd, message ,1024+16  , MSG_DONTWAIT, (struct sockaddr *)&si_other, &len_other);
+        Packet::deserialize(p,message);
+        if(bytes_received==-1){
+            return false;
+        }
+        return true;
+    }
     bool receivePacketTimeout(Packet *p){
         char* buffer=new char[1024+16];
         memset(buffer,0,1024+16);
@@ -161,7 +169,6 @@ public:
         }
         else{
             Packet::deserialize(p,buffer);
-
             delete[] buffer;
             return true;
         }

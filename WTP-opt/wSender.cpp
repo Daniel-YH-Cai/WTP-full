@@ -1,40 +1,60 @@
 #include "UDPSocket.h"
 #include <iostream>
 #include <fstream>
-#include <vector>
+#include <sys/time.h>
 #define MAX_START_ACK 2048
 using namespace std;
+#define SENT_AWAIT_ACK 1
+#define NOT_SENT 2
+#define SENT_ACKED 3
 
+
+//time utils
+double msElapsed(struct timeval* start,struct timeval* end){
+    long sec=end->tv_sec-start->tv_sec;
+    long millisec=end->tv_usec-start->tv_usec;
+    double ans=1000.0*sec+millisec/1000.0;
+    if(ans<0){
+        cout<<"Invalid time!\n";
+    }
+    return ans;
+}
 // TODO: avoid hardcoding size
 class AdvancedBatchSender
 {
+
     UDPSocket *s;
     // windows base: the first chunk in the windows;
     // the next packet to be send and to wait for ack
     int window_base;
-    // the number of packets already sent and are waiting for ackv
-    //a vector storing
-    bool* ack_received;
+    // the number of packets already sent and are waiting for ack
+    int waiting_ack;
     int length;
     ifstream file;
+    int num_packet;
+    int* status;
     ofstream logfile;
     int window_size;
+    int start_seq;
 
 public:
     static const int chunk_size = DATA_SIZE;
-    AdvancedBatchSender(const char *filename, const char *log, int ws)
+    AdvancedBatchSender(const char *filename, const char *log, int ws,int first_seq)
     {
         window_size = ws;
+        waiting_ack = 0;
         window_base = 0;
+        start_seq=first_seq;
         s = nullptr;
         logfile = ofstream(log);
         file = ifstream(filename, ios::binary);
         file.seekg(0, ios::end);
         length = file.tellg();
         file.seekg(0, ios::beg);
-        ack_received=new bool[length/chunk_size+1];
-        for (int i = 0; i < length/chunk_size; ++i) {
-            ack_received= false;
+        num_packet=length/chunk_size+1;
+        status=new int [num_packet];
+        for(int i=0;i<num_packet;i++){
+            status[i]=NOT_SENT;
         }
     };
     // send the index th chunck of the file
@@ -78,50 +98,98 @@ public:
 
     // return the new sequence number after sending the packets;
     // can send less then window_size packets (no longer used)
-    int send_window(int seqNumber, int index, int window_size)
-    {
-        if (chunk_size * index > length)
-        {
-            cout << "Invalid index!\n";
-            return seqNumber;
-        }
-        file.seekg(index * chunk_size, ios::beg);
-        char buffer[1024] = {0};
-        for (int i = 0; i < window_size; i++)
-        {
-            if ((index + i) * chunk_size <= length)
-            {
-                file.read(buffer, chunk_size);
-                Packet p(buffer, seqNumber,chunk_size);
-                s->sendPacket(p);
-                seqNumber++;
-                logfile << p.get_type() << " " << p.get_seqNum()
-                        << " " << p.get_length() << " " << p.get_checksum() << "\n";
-            }
-        }
-        return seqNumber;
-    }
+//    int send_window(int seqNumber, int index, int window_size)
+//    {
+//        if (chunk_size * index > length)
+//        {
+//            cout << "Invalid index!\n";
+//            return seqNumber;
+//        }
+//        file.seekg(index * chunk_size, ios::beg);
+//        char buffer[1024] = {0};
+//        for (int i = 0; i < window_size; i++)
+//        {
+//            if ((index + i) * chunk_size <= length)
+//            {
+//                file.read(buffer, chunk_size);
+//                Packet p(buffer, seqNumber,chunk_size);
+//                s->sendPacket(p);
+//                seqNumber++;
+//                logfile << p.get_type() << " " << p.get_seqNum()
+//                        << " " << p.get_length() << " " << p.get_checksum() << "\n";
+//            }
+//        }
+//        return seqNumber;
+//    }
     // Perform one cycle of sending packet and waiting ack;
     // Take in a bool representing whether ack is received in the previous round;
     // return whether a proper ack is received
     void cycle(){
-        for(int start=window_base;start<window_base+window_size;start++){
-            if(start<length/chunk_size){
-                if(!ack_received[start]){
-                    send_chunk(start);
+        for(int i=window_base;i<window_base+window_size;i++){
+            if(i<num_packet){
+                if(status[i]==NOT_SENT){
+                    send_chunk(i);
+                    status[i]=SENT_AWAIT_ACK;
                 }
             }
+            else break;
         }
-        s->receivePacketTimeout()
-    }
+        Packet buffer;
+        timeval start;memset(&start,0,sizeof (timeval));
+        timeval end;memset(&end,0,sizeof (timeval));
+        gettimeofday(&start, nullptr);
+        gettimeofday(&end, nullptr);
+        while(msElapsed(&start,&end)<500){
+            if(s->nonBlockReceive(&buffer)){
+                if(buffer.isValidACK()){
+                    if(buffer.get_seqNum()<window_base){
+                        cout<<"ACK value low\n";
+                    }
+                    else if(buffer.get_seqNum()==1+window_base){
+                        status[buffer.get_seqNum()]=SENT_ACKED;
+                        window_base++;
+                    }
+                    else if(buffer.get_seqNum()>1+window_base&&buffer.get_seqNum()<window_base+window_size){
+                        if(status[buffer.get_seqNum()]==SENT_AWAIT_ACK){
+                            status[buffer.get_seqNum()]=SENT_ACKED;
+                        }
+                        else{
+                            cout<<"Error: ACKed a packet not yet send!\n";
+                        }
+                    }
+                    else{
+                        cout<<"ACK value too high!\n";
+                    }
+                }
+                else{
 
+                }
+            }
+            else{
+                usleep(2500);
+            }
+            gettimeofday(&end, nullptr);
+        }
+        for(int i=window_base;i<window_base+window_size;i++){
+            if(i<num_packet){
+                if(status[i]==NOT_SENT){
+                    break;
+                }
+                else if(status[i]==SENT_AWAIT_ACK){
+                    status[i]=NOT_SENT;
+                }
+            }
+            else break;
+        }
+    }
     bool finished()
     {
         return window_base == length / chunk_size + 1;
     }
-    ~BatchSender()
+    ~AdvancedBatchSender()
     {
         file.close();
+        delete[] status;
     }
 };
 
@@ -154,7 +222,7 @@ int main(int argc, char *argv[])
         response.reset();
     }
     cout<<"Start!\n";
-    BatchSender bsender(argv[4], argv[5], window_size);
+    AdvancedBatchSender bsender(argv[4], argv[5], window_size,initial_seq);
     bsender.set_UDPSocket(&udp);
     while (!bsender.finished())
     {
