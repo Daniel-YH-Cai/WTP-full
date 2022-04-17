@@ -5,6 +5,7 @@
 #include "../starter_files/PacketHeader.h"
 #include "../starter_files/crc32.h"
 #include <string>
+#include <cstring>
 #define DATA_SIZE 1024
 #define START 0;
 class Packet
@@ -165,6 +166,7 @@ public:
         header = {4, 0, 0, 0};
         // size of payload of data packet
         length = 0;
+        memset(data,0,1024);
     }
 
     char data[1024] = {0};

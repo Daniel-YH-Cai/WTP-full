@@ -1,4 +1,4 @@
-all: base
+all: opt
 
 base:
 	$(MAKE) -C WTP-base

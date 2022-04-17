@@ -56,6 +56,7 @@ public:
         for(int i=0;i<num_packet;i++){
             status[i]=NOT_SENT;
         }
+        cout<<"Length of file: "<<num_packet<<" packets; "<<"Window size: "<<window_size<<"\n";
     };
     // send the index th chunck of the file
     void set_UDPSocket(UDPSocket *sock)
@@ -87,7 +88,7 @@ public:
                 file.read(buffer, packet_data_size);
             }
             Packet p(buffer, index,packet_data_size);
-            cout<<"The content before packeting: "<<buffer<<"\n";
+            //cout<<"The content before packeting: "<<buffer<<"\n";
             s->sendPacket(p);
             logfile << p.get_type() << " " << p.get_seqNum()
                     << " " << p.get_length() << " " << p.get_checksum() << "\n";
@@ -128,6 +129,7 @@ public:
         for(int i=window_base;i<window_base+window_size;i++){
             if(i<num_packet){
                 if(status[i]==NOT_SENT){
+                    cout<<"Packet "<<i<<" sent\n";
                     send_chunk(i);
                     status[i]=SENT_AWAIT_ACK;
                 }
@@ -145,12 +147,25 @@ public:
                     if(buffer.get_seqNum()<window_base){
                         cout<<"ACK value low\n";
                     }
-                    else if(buffer.get_seqNum()==1+window_base){
+                    else if(buffer.get_seqNum()==window_base){
+                        cout<<"Window base packet "<<buffer.get_seqNum()<<" received\n";
                         status[buffer.get_seqNum()]=SENT_ACKED;
-                        window_base++;
+                        //window_base++;
+                        //increase the window base for all acked
+                        for(int i=window_base;i<window_base+window_size;i++){
+                            if(i<num_packet){
+                                if(status[i]==SENT_ACKED){
+                                    window_base++;
+                                }
+                                else{
+                                    break;
+                                }
+                            }
+                        }
                     }
-                    else if(buffer.get_seqNum()>1+window_base&&buffer.get_seqNum()<window_base+window_size){
+                    else if(buffer.get_seqNum()>window_base&&buffer.get_seqNum()<window_base+window_size){
                         if(status[buffer.get_seqNum()]==SENT_AWAIT_ACK){
+                            cout<<"Packet "<<buffer.get_seqNum()<<" buffered\n";
                             status[buffer.get_seqNum()]=SENT_ACKED;
                         }
                         else{
@@ -169,6 +184,7 @@ public:
                 usleep(2500);
             }
             gettimeofday(&end, nullptr);
+            buffer.reset();
         }
         for(int i=window_base;i<window_base+window_size;i++){
             if(i<num_packet){
@@ -184,7 +200,13 @@ public:
     }
     bool finished()
     {
-        return window_base == length / chunk_size + 1;
+        for(int i=0;i<num_packet;i++){
+            if(status[i]!=SENT_ACKED){
+                cout<<"Packet "<<i<<" is not yet sent!\n";
+                return false;
+            }
+        }
+        return true;
     }
     ~AdvancedBatchSender()
     {
