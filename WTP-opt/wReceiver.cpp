@@ -118,7 +118,7 @@ int main(int argc, char **argv)
                     Packet newP(num);
                     cout << "I will send a ack packet with seq " << newP.get_seqNum() << "\n";
                     receiver.s->sendPacket(newP);
-                    receiver.logfile << "ACK Sent\n";
+                    //receiver.logfile << "ACK Sent\n";
                     receiver.logfile << newP.get_type() << " " << newP.get_seqNum()
                                      << " " << newP.get_length() << " " << newP.get_checksum() << "\n";
                 }
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
                     cout<<"I will send a ack packet with seq "<<newP.get_seqNum()<<"\n";
 
                     receiver.s->sendPacket(newP);
-                    receiver.logfile << "ACK Send\n";
+                    //receiver.logfile << "ACK Send\n";
                     receiver.logfile << newP.get_type() << " " << newP.get_seqNum()
                                      << " " << newP.get_length() << " " << newP.get_checksum() << "\n";
                 }

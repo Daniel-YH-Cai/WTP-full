@@ -33,11 +33,11 @@ class AdvancedBatchSender
     ifstream file;
     int num_packet;
     int* status;
-    ofstream logfile;
     int window_size;
     int start_seq;
 
 public:
+    ofstream logfile;
     static const int chunk_size = DATA_SIZE;
     AdvancedBatchSender(const char *filename, const char *log, int ws,int first_seq)
     {
@@ -143,6 +143,8 @@ public:
         gettimeofday(&end, nullptr);
         while(msElapsed(&start,&end)<500){
             if(s->nonBlockReceive(&buffer)){
+                logfile<< buffer.get_type() << " " << buffer.get_seqNum()
+                                 << " " << buffer.get_length() << " " << buffer.get_checksum() << "\n";
                 if(buffer.isValidACK()){
                     if(buffer.get_seqNum()<window_base){
                         cout<<"ACK value low\n";
@@ -231,11 +233,16 @@ int main(int argc, char *argv[])
     Packet start = Packet::StartPacket(initial_seq);
     Packet response;
     cout<<"Request start\n";
+    AdvancedBatchSender bsender(argv[4], argv[5], window_size,initial_seq);
     while (true)
     {
         udp.sendPacket(start);
+        bsender.logfile<< start.get_type() << " " << start.get_seqNum()
+               << " " << start.get_length() << " " << start.get_checksum() << "\n";
         if (udp.receivePacketTimeout(&response))
         {
+            bsender.logfile<< response.get_type() << " " << response.get_seqNum()
+                           << " " << response.get_length() << " " << response.get_checksum() << "\n";
             if (response.isValidACK() && response.get_seqNum() == initial_seq)
             {
                 break;
@@ -244,7 +251,6 @@ int main(int argc, char *argv[])
         response.reset();
     }
     cout<<"Start!\n";
-    AdvancedBatchSender bsender(argv[4], argv[5], window_size,initial_seq);
     bsender.set_UDPSocket(&udp);
     while (!bsender.finished())
     {
@@ -258,8 +264,12 @@ int main(int argc, char *argv[])
     while (true)
     {
         udp.sendPacket(end);
+        bsender.logfile<< end.get_type() << " " << end.get_seqNum()
+                       << " " << end.get_length() << " " << end.get_checksum() << "\n";
         if (udp.receivePacketTimeout(&response))
         {
+            bsender.logfile<< response.get_type() << " " << response.get_seqNum()
+                           << " " << response.get_length() << " " << response.get_checksum() << "\n";
             if (response.isValidACK() && response.get_seqNum() == initial_seq)
             {
                 break;
