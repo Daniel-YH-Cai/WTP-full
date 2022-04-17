@@ -63,10 +63,10 @@ public:
     }
  
 
-    void receive(char *message, int buff_size)
+    int receive(char *message, int buff_size)
     {
         std::cout << "Received from host: " << get_other_addr() << " port: " << get_other_port() << "\n";
-        recvfrom(fd, message, buff_size, 0, (struct sockaddr *)&si_other, &len_other);
+        return recvfrom(fd, message, buff_size, 0, (struct sockaddr *)&si_other, &len_other);
     }
 
     // receiving  a maximum of buff_size bytes into message in 500ms
@@ -144,8 +144,11 @@ public:
     {
         char buffer[1024+16] = {0};
 
-        this->receive(buffer, 1024+16);
+        int n = this->receive(buffer, 1472);
         Packet::deserialize(p, buffer);
+        printf("%d\n",n);
+        if(n-16!=p->header.length)
+            return false;
         // this->receive(buffer, p->header.length);
         // Packet::deserializeBody(p, buffer);
         return true;
