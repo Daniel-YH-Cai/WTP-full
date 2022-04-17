@@ -116,27 +116,32 @@ public:
 
     // getters
     // 0: START; 1: END; 2: DATA; 3: ACK
-    std::string get_type()
+//    std::string get_type()
+//    {
+//        std::string ans;
+//        switch (header.type) {
+//            case 0:
+//                ans="START";
+//                break;
+//            case 1:
+//                ans="END";
+//                break;
+//            case 2:
+//                ans="DATA";
+//                break;
+//            case 3:
+//                ans="ACK";
+//                break;
+//            default:
+//                ans="INVALID";
+//                std::cout<<"Invalid header!\n";
+//        }
+//        return ans;
+//    }
+
+    int get_type()
     {
-        std::string ans;
-        switch (header.type) {
-            case 0:
-                ans="START";
-                break;
-            case 1:
-                ans="END";
-                break;
-            case 2:
-                ans="DATA";
-                break;
-            case 3:
-                ans="ACK";
-                break;
-            default:
-                ans="INVALID";
-                std::cout<<"Invalid header!\n";
-        }
-        return ans;
+        return header.type;
     }
     unsigned int get_seqNum()
     {
@@ -154,7 +159,7 @@ public:
     // check if a ack packet is valid
     bool isValidACK()
     {
-        if (checkSum() && get_type() == "ACK" && get_length() == 0)
+        if (checkSum() && get_type() == 3 && get_length() == 0)
         {
             return true;
         }

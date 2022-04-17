@@ -72,11 +72,13 @@ int main(int argc, char **argv)
     receiver.s->receivePacket(&p);
     receiver.logfile << p.get_type() << " " << p.get_seqNum()
                      << " " << p.get_length() << " " << p.get_checksum() << "\n";
-    if (p.get_type() == "START")
+    if (p.get_type() == 0)
     {
         // ack for start
         Packet startP(p.get_seqNum());
         receiver.s->sendPacket(startP);
+        receiver.logfile << startP.get_type() << " " << startP.get_seqNum()
+                         << " " << startP.get_length() << " " << startP.get_checksum() << "\n";
         ofstream file = ofstream(receiver.file + "/FILE-" + to_string(receiver.fileCount++) + ".out");
         int num = 0;
         int max = 0;
@@ -87,18 +89,22 @@ int main(int argc, char **argv)
             receiver.s->receivePacket(pData);
             receiver.logfile << pData->get_type() << " " << pData->get_seqNum()
                              << " " << pData->get_length() << " " << pData->get_checksum() << "\n";
-            if (pData->get_type() == "START")
+            if (pData->get_type() == 0)
             {
                 receiver.s->sendPacket(startP);
+                receiver.logfile << startP.get_type() << " " << startP.get_seqNum()
+                                 << " " << startP.get_length() << " " << startP.get_checksum() << "\n";
                 continue;
             }
 
             // For each packet received
-            if (pData->get_type() == "END" && pData->get_seqNum() == p.get_seqNum())
+            if (pData->get_type() == 1 && pData->get_seqNum() == p.get_seqNum())
             {
                 // ack for end
                 Packet endP(pData->get_seqNum());
                 receiver.s->sendPacket(endP);
+                receiver.logfile << endP.get_type() << " " << endP.get_seqNum()
+                                 << " " << endP.get_length() << " " << endP.get_checksum() << "\n";
                 break;
             }
             if (pData->checkSum())
