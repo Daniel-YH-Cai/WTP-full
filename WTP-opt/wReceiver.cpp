@@ -110,12 +110,15 @@ int main(int argc, char **argv)
                     //     max = pData.get_seqNum();
                     // }
                     receiver.window[0] = pData;
+                    
+                    Packet newP(num);
+
                     while (receiver.window[0] != nullptr)
                     {
                         receiver.writeFile(file);
                         num += 1;
                     }
-                    Packet newP(num);
+                    
                     cout << "I will send a ack packet with seq " << newP.get_seqNum() << "\n";
                     receiver.s->sendPacket(newP);
                     //receiver.logfile << "ACK Sent\n";
