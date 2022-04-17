@@ -84,7 +84,10 @@ int main(int argc, char **argv)
         while (true)
         {
             Packet *pData = new Packet(0);
-            receiver.s->receivePacket(pData);
+            if(!receiver.s->receivePacket(pData)){
+                cout<<"lost";
+                continue;
+            }
             receiver.logfile << pData->get_type() << " " << pData->get_seqNum()
                              << " " << pData->get_length() << " " << pData->get_checksum() << "\n";
             if (pData->get_type() == "START")
@@ -110,9 +113,7 @@ int main(int argc, char **argv)
                     //     max = pData.get_seqNum();
                     // }
                     receiver.window[0] = pData;
-                    
                     Packet newP(num);
-
                     while (receiver.window[0] != nullptr)
                     {
                         receiver.writeFile(file);

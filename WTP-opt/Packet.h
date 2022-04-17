@@ -103,6 +103,8 @@ public:
     // check sum
     bool checkSum()
     {
+        printf("%d\n",this->header.length);
+        printf(" %ud|%ud\n",this->header.checksum,crc32(this->data, this->length));
         if (this->header.checksum == crc32(this->data, this->length))
             return true;
         return false;
